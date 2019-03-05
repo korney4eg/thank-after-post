@@ -1,0 +1,59 @@
+version: '3'
+
+services:
+  mysql:
+    image: mysql:8.0.12
+    command: --default-authentication-plugin=mysql_native_password
+    #restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: wordpress
+    networks:
+      local:
+        aliases:
+          - database
+
+  wordpress:
+    image: wordpress:5.1-php7.3-apache
+    container_name: wordpress
+    ports:
+      - "80:80"
+    environment:
+      WORDPRESS_DB_HOST: database
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: root
+      WORDPRESS_DB_NAME: wordpress
+    networks:
+      - local
+    depends_on:
+      - "mysql"
+    volumes:
+      - "./wp:/var/www/html/"
+      - "./thank-after-post:/var/www/html/wp-content/plugins/thank-after-post"
+
+  wp-cli:
+    image: wordpress:cli
+    container_name: wp-cli
+    environment:
+      WORDPRESS_DB_HOST: database
+      WORDPRESS_DB_USER: root
+      WORDPRESS_DB_PASSWORD: root
+      WORDPRESS_DB_NAME: wordpress
+    networks:
+      - local
+    volumes:
+      - "./wp:/var/www/html/"
+      - "./thank-after-post.zip:/opt/thank-after-post.zip"
+      - "./configure-wp.sh:/opt/configure-wp.sh"
+    depends_on:
+      - "mysql"
+    command: "bash /opt/configure-wp.sh"
+
+networks:
+  local:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+      -
+        subnet: 172.16.238.0/24
